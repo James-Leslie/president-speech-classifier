@@ -1,4 +1,6 @@
 # Data Science for Industry Project 2: Predict the President
+NOTE: This project should ideally be reviewed directly on GitHub, with the exception of the classifier notebook, which can be run directly on Google Colab.   
+
 There were two major sections of this assignment:
 
   - Train a model capable of predicting the speaker of a given sentence taken from a South African presidential address.  
@@ -23,7 +25,7 @@ The data used for this assignment consisted of a collection of text files contai
   - `README.md`:contains further instructions on how to run the above files and more information on them.
 
 ## Group Participation
-This group consisted of Dean Hope Robertson, James Leslie, Kieran Donnelly and Devon Stone.
+This group consisted of [Dean Hope Robertson](https://github.com/deanhoperobertson), [James Leslie](https://github.com/James-Leslie), [Kieran Donnelly](https://github.com/kieranbd) and [Devon Stone](https://github.com/devon12stone).
 
 The language model, class balancing and classifier model sections were handled by James and Kieran. Dean completed the sentiment analysis of the speeches. Devon completed the other text analytics and the word cloud generation. In addition, James wrote the pre-processing and data-loader notebooks and they were annotated by Kieran.
 
