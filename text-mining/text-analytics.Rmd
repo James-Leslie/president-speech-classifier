@@ -1,0 +1,257 @@
+---
+title: "Text Analytics"
+author: "Devon Stone"
+date: "13/09/2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+# Section 3: Text Analysis 
+
+This markdown file displays the text analysis techniques used on the provided set of presidential speeches. The markdown first steps through the pre-processing steps completed and then highlights the various techniques used.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries Used
+
+```{r}
+library(quanteda)
+library(tm)
+library(readtext)
+library(topicmodels)
+library(ggplot2)
+```
+
+## Read in Speeches
+
+The first step in the process is to bring in the dataset. The presidential speeches analysed were provided as text files. The code below reads all text files in the folder named 'data' and stores them in a dataframe.
+
+```{r}
+# load data in the format of president followed by text
+data <- readtext('../data/speeches')
+head(data)
+```
+
+After reading in the data the next process was completed was to extract the year and president of each speed from the file name of each speech 
+
+```{r}
+# create lists containing years and presidents
+years <- sapply(strsplit(data[,1], "_"), "[[", 1)
+pres <- sapply(strsplit(data[,1], "_"), "[[", 2)
+pres <- sub(".txt", "", pres)
+
+
+# create columns in the dataframe containing the years and presidents
+data$year <- years
+data$president <- pres
+
+# check data
+head(data)
+```
+
+## Data Preparation
+
+Before any analysis can be completed some necessary data processing steps need to be followed.
+
+#### Tokenization
+
+We break the documents down into individual word tokens. Text is broken into word tokens as words are often the most semantically meaningful components of text and therefore we are able to perform the most meaningful analysis on the words themselves, as opposed to the entire sentences.
+
+```{r}
+# tokenization
+# we remove punctuation from the documents in this step
+toks <- tokens(as.character(data['text']), remove_punct = TRUE)
+
+# we can examples of the tokenized words from the 1st document
+options(max.print=10)
+toks[1]
+```
+
+#### Normalization
+
+We now normalize the words by ensuring all tokens are in lower case and stemming the words. Stemming involves removing the suffixes and plural attachments of words, which can be considered as variations of root words. Stemming ensures that only the root word of each token is considered the analysis. For example, if we stem the word running it would be seen as run. 
+
+```{r}
+toks <- tokens_tolower(toks)
+toks <- tokens_wordstem(toks)
+```
+
+#### Stopwords
+We now remove stopwords such as "an, a and the" from each tokenized document so that only informative words remain.
+
+```{r}
+# remove stopwords
+sw <- stopwords("english")
+toks <- tokens_remove(toks, sw)
+
+# we can examples of the tokenized words from the 1st document
+options(max.print=10)
+toks[1]
+```
+
+#### Document-term matrix
+
+We now place the manipulated tokens into a bag of a bag-of-words format called a document-term matrix (DTM). The DTM is in the following format: rows are sentences, columns are words, and cells indicate how often each term occurred in each sentence. 
+
+```{r}
+# convert speeches to a corpus of words
+corp <- corpus(data)
+
+# we can lower, stem, tokenize and remove punction while creating the dtm
+dtm <- dfm(corp, tolower=TRUE, stem=TRUE, remove_punct=TRUE, remove=stopwords("english"))
+dtm
+```
+
+#### Filtering and weighting
+
+Beyond stopwords, there are still words in the DTM that are not meaningful. These meaningless words are often very common to many sentences and can be removed using their high frequencies. Very rare words can make analysis more difficult and removing them can lead to better accuracies in category prediction (in the case of this assignment, president prediction). 
+
+We can further increase category prediction accuracy by assigning weights to each tokenized word in the DTM. The weights assign an information value to each word. A popular weighting method is term frequency-inverse document frequency (tf-idf).
+
+```{r}
+# create the freq of each word
+word_freq <- docfreq(dtm)
+
+# only take words that appear more than twice
+dtm <- dtm[, word_freq > 2]
+dtm
+
+# give item values to each word
+weighted_dtm <- dfm_tfidf(dtm)
+weighted_dtm
+```
+
+We can see the effects of filtering in difference between the sparsity percentages of the DTM created before filtering and the one after filtering.
+
+## Analysis
+
+We are going to perform both deductive and inductive techniques on the dataset. The deductive methods involve classifying the words in sentence into a predefined category. While, the inductive techniques involve finding meaningful patterns in the words themselves, rather than categorising the words.  
+
+### Counting and dictionary
+
+The dictionary approach involves counting the occurrence of predefined concepts in the sentences. This is a very simple approach and requires strong user input. We create a dictionary so that we can gain an insight into the major topics of each speech. The dictionary below is designed to capture... The dictionary should be created using stem words. 
+
+```{r}
+# change max print again
+options(max.print=1000)
+
+# create dictionary
+dict <- dictionary(list(economy=c("job*", "econom*", "grow*", "business*", "finan*", "inflat*", "imorts*", "export*"), law=c("constitu*", "amend*", "law*"), toursim=c("touris*", "travel*"), culture=c("communit*", "informal settle*", "culture*"), government=c("government*", "minist*", "provinc*")))
+
+# create the lookup dtm
+dict_dtm <- dfm_lookup(dtm, dict, nomatch = "unmatched")
+print(dict_dtm, ndoc=30)
+```
+
+
+We can see from the above counts the major topics covered in each speech. President de Klerk's speech in 1994 (pre the first fully free elections) contained the most words based around law and the constitution. While President Ramaphosa's 2018 contained the most words relating to the country's economy.
+
+### Topic Modeling
+
+We are going to build on the above section by removing the human input from the "topic" generation and turn our focus away from the topics in each speach but rather focus on words that lie in similar topics. We are going to do this through Topic Modelling, which is in an unsupervised learning technique where the goal is to group words in different documents into like “topics". The topic modelling technique we are going to use is Latent Dirichlet Allocation (LDA). LDA is famous for producing human-readable topic groups. The input for an LDA model is a bag-of-words in matrix form (DTM created above). An LDA model is essentially a two-layer aggregation. One for the distribution of topics across a document and the other for distribution of each word within a particular topic.
+
+LDA invloves giving each tokenized word a weight, as shown in the `weighted_dtm`. The Image 1  shows the exact process of LDA. The alpha symbol represents the Dirichlet prior on the per-document topic distributions, beta is the Dirichlet prior on the per-topic word distribution, theta represents the topic distribution for document n, Z is the is the topic for the n-th word in document m and W is a specific word. 
+
+![Image 1: Latent Dirichlet Allocation](https://github.com/James-Leslie/president-speech-classifier/blob/master/data/diagrams/LDA.jpg?raw=true)
+
+#### Most Common Words
+
+We start by displaying the 30 most common words across all the speeches in the dataset so we can get a slightly better understanding of the common words across the presidential speeches. 
+
+```{r}
+# freqency of words in the corpus and sort the list
+freq <- sort(colSums(dtm), decreasing=TRUE)
+
+# make the freq table a dtaframe
+freq <- data.frame(words = names(freq), frequency=freq)
+freq$words = reorder(freq$words, freq$frequency)
+head(freq)
+```
+
+```{r}
+
+# plot the words and their frequency
+ggplot(freq[1:29,], aes(x=words, y=frequency)) + geom_point(size=3, colour="red") + coord_flip() +ggtitle("Word Popularity in Speeches") + 
+theme(axis.text.x=element_text(size=10,face="bold", colour="black"), axis.text.y=element_text(size=10,colour="black",
+face="bold"), axis.title.x=element_text(size=14, face="bold"), axis.title.y=element_text(size=14,face="bold"),
+plot.title=element_text(size=24,face="bold"))
+```
+
+We can see from the above plot that the word appears significantly more popular than any of the other words. We will remove this word in case it skews the model. We will also remove other words like also, us and can that could be considered as stopwords.
+
+```{r}
+# remove will
+n_corp <- tm_map(Corpus(VectorSource(data)), removeWords, c("will", "can", "us", "also"))
+n_corp <- corpus(n_corp)
+n_dtm <- dfm(n_corp, tolower=TRUE, stem=TRUE, remove_punct=TRUE, remove=stopwords("english"))
+
+# recalculate freq
+n_freq <- sort(colSums(n_dtm), decreasing=TRUE)
+
+# make the freq table a dtaframe
+n_freq <- data.frame(words = names(n_freq), frequency=n_freq)
+n_freq$words = reorder(n_freq$words, n_freq$frequency)
+head(n_freq)
+
+# make the plot
+ggplot(n_freq[1:29,], aes(x=words, y=frequency)) + geom_point(size=3, colour="red") + coord_flip() +ggtitle("Word Popularity in Speeches") + 
+theme(axis.text.x=element_text(size=10,face="bold", colour="black"), axis.text.y=element_text(size=10,colour="black",
+face="bold"), axis.title.x=element_text(size=14, face="bold"), axis.title.y=element_text(size=14,face="bold"),
+plot.title=element_text(size=24,face="bold"))
+```
+
+#### Creating the Model
+
+Now we create the LDA model. 
+
+```{r}
+# set a seed
+set.seed(42)
+
+# create model
+lda_mod <- LDA(n_dtm, method = "Gibbs", k = 10)
+```
+
+```{r}
+# show model results
+terms(lda_mod, 5)
+```
+We can see that LDA model did not cluster the words that definitively but we can see certain topics have a trend. Topic 2 appears to be about starting something new. Topic 6 appears to be about transformation and economics. Topic 10 appears to be about law and governance. 
+
+
+## Statistics
+
+A particularly useful technique is to compare the term frequencies of two corpora, or between two subsets of the same corpus. For instance, we can see which president was more likely to say a certain word in the speech when compared to another. In addition to providing a way to quickly explore how this topic is discussed in the corpus, this can provide input for developing better queries.
+
+```{r}
+# list of unique presidents
+presidents <- unique(pres)
+
+# set layout
+par(mfrow=c(15,1))
+
+# creare a loop to go through all presidential combinations
+for (i in 1:(length(presidents) -1)){
+  
+  for (j in (i+1):(length(presidents))){
+
+    
+        # corpus of only two presidents
+        corp_zu_man <- corpus_subset(corp, president %in% c(presidents[i], presidents[j]))
+        
+        # DTM from the above corpus
+        dtm_zu_man <- dfm(corp_zu_man, groups = "president", tolower=TRUE, stem = FALSE,       remove_punct=TRUE, remove=stopwords("english"))
+        
+        # plot the comaprison
+        keyness <- textstat_keyness(dtm_zu_man, target = presidents[i])
+        plot <- textplot_keyness(keyness, show_legend = TRUE, color = c("darkblue", "red"), n = 10L,  labelsize = 4)
+        
+        print(plot)
+ 
+  }
+}
+```
+
+For example, in the first plot shown we can see that President Mandela was more likey to sue the words jobs, rights and thousand when compared to President Mbeki. While President Mbeki was more likely to use energy, decade and years. 

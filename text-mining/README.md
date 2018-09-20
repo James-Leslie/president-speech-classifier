@@ -2,7 +2,7 @@
 
 This section of the assignment covered the descriptive analysis of the text in the presidential speeches.
 
-The folder contains the following files
+The folder contains the following files:
 
 * ### `text_analytics.Rmd`
 
@@ -15,13 +15,15 @@ The markdown file should be run from top-to-bottom and uses the raw text-files a
 
 * ### `word_cloud.ipynb`
 
-This Jupyter generates a word cloud of the twenty most common words spoken by each president in all of their speeches.
+This Jupyter notebook generates a word cloud of the twenty most common words spoken by each president in all of their speeches.
 
-The notebook uses the cleaned sentences in the model-input.csv file, which is contained in the Data folder. The notebook is run from top to bottom.  
+The notebook uses the cleaned sentences in the model-input.csv file, which is contained in the data folder. The notebook is run from top to bottom.  
 
 
-* ### `sentiment.Rmd`
+* ### `Sentiment.Rmd`
 
-This markdown displays the sentiment analysis that was performed on the text contained in the presidential speeches. The analysis was performed in the markdown file titled sentiment.
+This markdown displays various sentiment analysis techniques that were performed on the SONA presidential speeches. The data is loaded via URL to the GitHub repository.
 
-The R markdown file should be run from top-to-bottom.
+The markdown firsts looks at individual word sentiment using popular lexicons as well a overall sentiment of the entire text. The analysis covers sentiment over time using a combination of lexicons, before moving onto n-grams. Finally the markdown looks at how to deal with negators/amplifiers in text as well as calculating polarity scores.
+
+The R markdown file should be run top-to-bottom.
