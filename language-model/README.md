@@ -20,16 +20,25 @@ The notebook has been set up to run top-to-bottom, without the need to change an
 
 There are two main components of this notebook:
   1. Handling the class imbalance in the data set.
-  2. Training and testing a CNN LSTM neural network model on the data set.
+  2. Training and testing a CNN/RNN neural network model on the data set.
 
 ### 2.1. Class imbalance
 The data set used for this project is heavily imbalanced. A distribution of the number of sentences per president is shown below.   
 
-| President | Sentence Count |
-|---|---|
-| FW de Klerk | 105 |
-| Nelson Mandela |  |
-| Thabo Mbeki |   |
-| Kgalema Mothlanthe |   |
-| Jacob Zuma |   |
-| Cyril Ramaphosa |   |
+| President | Sentence Count | % of total |
+|---|---| --- |
+| FW de Klerk | 105 | 4.2 |
+| Nelson Mandela | 1785 | 20.3 |
+| Thabo Mbeki | 3074 | 35.6 |
+| Kgalema Mothlanthe | 306 | 4.5 |
+| Jacob Zuma | 3145 | 36.2 |
+| Cyril Ramaphosa | 275 | 4.4 |   
+
+Resolving this imbalance is one of the main obstacles to tackle for this challenge.
+
+### 2.2. Neural network classifier
+Three classifiers were trained and tested on this data set. A summary of their classification accuracies is shown below:  
+
+  - Simple 3 Layer Neural Network: 37%
+  - RNN-LSTM with embeddings: 63%
+  - CNN/RNN-LSTM with embeddings: 57%
